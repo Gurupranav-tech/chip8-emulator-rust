@@ -1,9 +1,8 @@
-use chip_8::emulator::Emulator;
-use core::time;
+use chip_8::{SquareWave, emulator::Emulator};
 use sdl2::{
-    event::Event, keyboard::Keycode, pixels::PixelFormatEnum, rect::Rect, render::TextureAccess,
+    audio::AudioSpecDesired, event::Event, keyboard::Keycode, pixels::PixelFormatEnum, rect::Rect, render::TextureAccess
 };
-use std::{env, fs, thread::sleep};
+use std::{env, fs};
 
 extern crate sdl2;
 
@@ -39,9 +38,21 @@ fn main() {
     let mut event_pump = sdl.event_pump().unwrap();
     let mut keycodes = [0 as u8; 16];
 
-    'running: loop {
-        emulator.run(&mut texture, &keycodes);
+    let audio_subsystem = sdl.audio().unwrap();
 
+    let desired_spec = AudioSpecDesired {
+        freq: Some(44100),
+        channels: Some(1),
+        samples: None,
+    };
+
+    let device = audio_subsystem
+        .open_playback(None, &desired_spec, |spec| {
+            SquareWave::new(440.0 / spec.freq as f32, 0.0, 0.25)
+        })
+        .unwrap();
+
+    'running: loop {
         canvas.clear();
         for event in event_pump.poll_iter() {
             match event {
@@ -104,9 +115,15 @@ fn main() {
             }
         }
 
+        emulator.run(&mut texture, &keycodes);
+
+        if emulator.need_sound() {
+            device.resume();
+        } else {
+            device.pause();
+        }
+
         canvas.copy(&texture, None, Some(target_rect)).unwrap();
         canvas.present();
-
-        sleep(time::Duration::from_millis(16));
     }
 }

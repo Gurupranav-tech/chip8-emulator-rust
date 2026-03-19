@@ -18,6 +18,10 @@ impl Emulator {
         }
     }
 
+    pub fn need_sound(&self) -> bool {
+        self.chip.timer2 != 0
+    }
+
     pub fn run(&mut self, texture: &mut Texture, keycodes: &[u8; 16]) {
         if self.debug {
             let (inst, _, _, _, _) = self.chip.instruction();
