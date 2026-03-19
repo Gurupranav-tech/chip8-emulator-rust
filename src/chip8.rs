@@ -54,7 +54,7 @@ impl Chip8 {
             program_counter: 0x200,
             stack: Vec::new(),
             memory: [0; 4096],
-            display: [[1; 64]; 32],
+            display: [[0; 64]; 32],
             rnd_gen: rand::thread_rng(),
         };
 
@@ -105,7 +105,7 @@ impl Chip8 {
                 }
             }
             9 => {
-                if self.vs[n2 as usize] == self.vs[n3 as usize] {
+                if self.vs[n2 as usize] != self.vs[n3 as usize] {
                     self.program_counter += 2;
                 }
             }
@@ -115,7 +115,7 @@ impl Chip8 {
             }
             7 => {
                 let val = ((n3 << 4) | n4) as u8;
-                self.vs[n3 as usize] = ((self.vs[n3 as usize] as u32 + val as u32) % 0xff) as u8;
+                self.vs[n2 as usize] = self.vs[n2 as usize].wrapping_add(val);
             }
             8 => {
                 let n2 = n2 as usize;
@@ -127,8 +127,9 @@ impl Chip8 {
                     2 => self.vs[n2] &= self.vs[n3],
                     3 => self.vs[n2] ^= self.vs[n3],
                     4 => {
-                        self.vs[0xf] = (self.vs[n2] as u16 + self.vs[n3] as u16 > 0xff) as u8;
-                        self.vs[n2] = ((self.vs[n2] as u16 + self.vs[n3] as u16) % 0xff) as u8;
+                        let (res, carry) = self.vs[n2].overflowing_add(self.vs[n3]);
+                        self.vs[n2] = res;
+                        self.vs[0xF] = carry as u8;
                     }
                     5 => {
                         self.vs[n2] = self.vs[n2].wrapping_sub(self.vs[n3]);
@@ -149,7 +150,7 @@ impl Chip8 {
                 }
             }
             10 => self.i = (n2 << 8) | (n3 << 4) | n4,
-            11 => self.program_counter = (n2 << 8) | (n3 << 4) | n4 + self.vs[n2 as usize] as u16,
+            11 => self.program_counter = ((n2 << 8) | (n3 << 4) | n4) + self.vs[0] as u16,
             12 => {
                 let val = (n3 << 4 | n4) as u8;
                 self.vs[n2 as usize] = val & self.rnd_gen.gen_range(0..=0xff) as u8;
@@ -194,12 +195,12 @@ impl Chip8 {
             15 => match n3 << 4 | n4 {
                 0x55 => {
                     for i in 0..=n2 {
-                        self.memory[(self.i + i) as usize] = self.vs[self.i as usize];
+                        self.memory[(self.i + i) as usize] = self.vs[i as usize];
                     }
                 }
                 0x65 => {
                     for i in 0..=n2 {
-                        self.vs[self.i as usize] = self.memory[(self.i + i) as usize];
+                        self.vs[i as usize] = self.memory[(self.i + i) as usize];
                     }
                 }
                 0x1e => self.i += self.vs[n2 as usize] as u16,
@@ -229,15 +230,10 @@ impl Chip8 {
                     }
                 }
                 0x33 => {
-                    let digits: Vec<u8> = self.vs[n2 as usize]
-                        .to_string()
-                        .chars()
-                        .map(|c| c.to_digit(10).unwrap_or(0) as u8)
-                        .collect();
-
-                    for (idx, digit) in digits.iter().enumerate() {
-                        self.memory[(self.i + idx as u16) as usize] = *digit;
-                    }
+                    let val = self.vs[n2 as usize];
+                    self.memory[self.i as usize] = val / 100;
+                    self.memory[self.i as usize + 1] = (val / 10) % 10;
+                    self.memory[self.i as usize + 2] = val % 10;
                 }
                 _ => println!("Unknown opcode in the instruction {inst:x}"),
             },
