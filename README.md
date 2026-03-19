@@ -1,8 +1,14 @@
 # CHIP-8 Emulator
 
-A simple CHIP-8 emulator written in Rust.
+A CHIP-8 emulator written in Rust using SDL2.
 
-This project implements the CHIP-8 virtual machine with support for standard instructions, graphics, input handling, and sound. It is intended as a learning project and a clean reference implementation.
+This project implements the CHIP-8 virtual machine, including graphics, input, and sound. It can run classic CHIP-8 ROMs and test programs.
+
+---
+
+## About CHIP-8
+
+CHIP-8 is a simple interpreted programming language used to build early video games. Writing a CHIP-8 emulator is a common project for learning emulation, CPU design, and low-level systems programming.
 
 ---
 
@@ -102,5 +108,11 @@ Z X C V      →  A 0 B F
 
 * Timing and quirks follow a common modern interpretation of CHIP-8.
 * Some ROMs rely on specific quirks; behavior may vary slightly.
+
+---
+
+## Demo
+
+![demo](assets/demo.png)
 
 ---
