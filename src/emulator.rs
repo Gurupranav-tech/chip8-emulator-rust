@@ -18,7 +18,7 @@ impl Emulator {
         }
     }
 
-    pub fn run(&mut self, texture: &mut Texture) {
+    pub fn run(&mut self, texture: &mut Texture, keycodes: &[u8; 16]) {
         if self.debug {
             let (inst, _, _, _, _) = self.chip.instruction();
 
@@ -29,7 +29,7 @@ impl Emulator {
             println!("stack {:?}", self.chip.stack());
         }
 
-        self.chip.execute();
+        self.chip.execute(keycodes);
 
         texture
             .with_lock(None, |buffer: &mut [u8], pitch: usize| {

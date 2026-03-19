@@ -37,9 +37,10 @@ fn main() {
     let target_rect = Rect::new(0, 0, 1024, 512);
 
     let mut event_pump = sdl.event_pump().unwrap();
+    let mut keycodes = [0 as u8; 16];
 
     'running: loop {
-        emulator.run(&mut texture);
+        emulator.run(&mut texture, &keycodes);
 
         canvas.clear();
         for event in event_pump.poll_iter() {
@@ -49,6 +50,56 @@ fn main() {
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
+                Event::KeyDown {
+                    keycode: Some(code),
+                    ..
+                } => {
+                    let idx = match code {
+                        Keycode::Num1 => Some(0x1),
+                        Keycode::Num2 => Some(0x2),
+                        Keycode::Num3 => Some(0x3),
+                        Keycode::Num4 => Some(0x4),
+                        Keycode::Num5 => Some(0x5),
+                        Keycode::Num6 => Some(0x6),
+                        Keycode::Num7 => Some(0x7),
+                        Keycode::Num8 => Some(0x8),
+                        Keycode::Num9 => Some(0x9),
+                        Keycode::A => Some(0x10),
+                        Keycode::B => Some(0x11),
+                        Keycode::C => Some(0x12),
+                        Keycode::D => Some(0x13),
+                        Keycode::E => Some(0x14),
+                        Keycode::F => Some(0x15),
+                        _ => None,
+                    }
+                    .unwrap_or(0);
+                    keycodes[idx] = 1;
+                }
+                Event::KeyUp {
+                    keycode: Some(code),
+                    ..
+                } => {
+                    let idx = match code {
+                        Keycode::Num1 => Some(0x1),
+                        Keycode::Num2 => Some(0x2),
+                        Keycode::Num3 => Some(0x3),
+                        Keycode::Num4 => Some(0x4),
+                        Keycode::Num5 => Some(0x5),
+                        Keycode::Num6 => Some(0x6),
+                        Keycode::Num7 => Some(0x7),
+                        Keycode::Num8 => Some(0x8),
+                        Keycode::Num9 => Some(0x9),
+                        Keycode::A => Some(0x10),
+                        Keycode::B => Some(0x11),
+                        Keycode::C => Some(0x12),
+                        Keycode::D => Some(0x13),
+                        Keycode::E => Some(0x14),
+                        Keycode::F => Some(0x15),
+                        _ => None,
+                    }
+                    .unwrap_or(0);
+                    keycodes[idx] = 0;
+                }
                 _ => {}
             }
         }

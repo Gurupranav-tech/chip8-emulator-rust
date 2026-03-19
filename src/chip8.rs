@@ -27,7 +27,9 @@ pub struct Chip8 {
     pub i: u16,
 
     // Timer registers
+    // delay timer
     pub timer1: u8,
+    // sound timer
     pub timer2: u8,
 
     // Special Registers
@@ -62,7 +64,7 @@ impl Chip8 {
         chip
     }
 
-    pub fn execute(&mut self) {
+    pub fn execute(&mut self, keycodes: &[u8; 16]) {
         let (inst, n1, n2, n3, n4) = self.instruction();
         self.program_counter += 2;
 
@@ -181,10 +183,72 @@ impl Chip8 {
                     }
                 }
             }
-            
+            14 => {
+                let code = self.vs[n2 as usize] as usize;
+                if n3 == 9 && n4 == 14 && keycodes[code] == 1 {
+                    self.program_counter += 2;
+                } else if n3 == 10 && n4 == 1 && keycodes[code] == 0 {
+                    self.program_counter += 2;
+                }
+            }
+            15 => match n3 << 4 | n4 {
+                0x55 => {
+                    for i in 0..=n2 {
+                        self.memory[(self.i + i) as usize] = self.vs[self.i as usize];
+                    }
+                }
+                0x65 => {
+                    for i in 0..=n2 {
+                        self.vs[self.i as usize] = self.memory[(self.i + i) as usize];
+                    }
+                }
+                0x1e => self.i += self.vs[n2 as usize] as u16,
+                0x07 => self.vs[n2 as usize] = self.timer1,
+                0x15 => self.timer1 = self.vs[n2 as usize],
+                0x18 => self.timer2 = self.vs[n2 as usize],
+                0x29 => {
+                    let digit = self.vs[n2 as usize];
+                    self.i = digit as u16 * 5;
+                }
+                0x0a => {
+                    let mut key_pressed = None;
+                    for (i, &key) in keycodes.iter().enumerate() {
+                        if key != 0 {
+                            key_pressed = Some(i as u8);
+                            break;
+                        }
+                    }
 
+                    match key_pressed {
+                        Some(key) => {
+                            self.vs[n2 as usize] = key;
+                        }
+                        None => {
+                            self.program_counter -= 2;
+                        }
+                    }
+                }
+                0x33 => {
+                    let digits: Vec<u8> = self.vs[n2 as usize]
+                        .to_string()
+                        .chars()
+                        .map(|c| c.to_digit(10).unwrap_or(0) as u8)
+                        .collect();
+
+                    for (idx, digit) in digits.iter().enumerate() {
+                        self.memory[(self.i + idx as u16) as usize] = *digit;
+                    }
+                }
+                _ => println!("Unknown opcode in the instruction {inst:x}"),
+            },
             _ => println!("Cannot decode unknown instruction {inst:x}"),
         };
+        if self.timer2 != 0 {
+            self.timer2 -= 1;
+        }
+        if self.timer1 != 0 {
+            self.timer1 -= 1;
+        }
     }
 
     pub fn cls(&mut self) {
